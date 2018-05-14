@@ -78,7 +78,7 @@ cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch01\ch01-whale"
 docker build -t  dockeronwindows/ch01-whale .
 docker container run dockeronwindows/ch01-whale
 
-https://blog.sixeyed.com/weekly-windows-dockerfile-2/
+https://blog.sixeyed.com/windows-weekly-dockerfile-2/
 cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch01\ch01-az"
 docker build -t dockeronwindows/ch01-az .
 docker container run -it dockeronwindows/ch01-az
