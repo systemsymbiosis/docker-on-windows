@@ -105,13 +105,14 @@ docker image build -t dockeronwindows/ch02-dotnet-helloworld .
 docker container run dockeronwindows/ch02-dotnet-helloworld
 https://blog.sixeyed.com/weekly-windows-dockerfile-5/
 dotnet restore src
-dotnet publish src
-
 docker image build --file Dockerfile.slim --tag dockeronwindows/ch02-dotnet-helloworld:slim .
 
-docker container run dockeronwindows/ch02-dotnet-helloworld:slim
+docker container run dockeronwindows/ch02-dotnet-helloworld:
+dotnet publish src
+slim
 
-docker image build --t docker-on-windows/ch02-dotnet-hello-world:multistage --file Dockerfile.multistage .
+docker image build --tag docker-on-windows/ch02-dotnet-hello-world:multistage --file Dockerfile.multistage .
+docker container run docker-on-windows/ch02-dotnet-hello-world:multistage
 
 $ docker system prune -a --volumes
 
