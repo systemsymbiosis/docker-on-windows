@@ -200,3 +200,64 @@ docker ps -a
 docker container ls --all
 docker image rm 97ebd5a4d4b3
 docker container rm 825671e7d302
+
+https://blog.sixeyed.com/weekly-windows-dockerfile-9-container-filesystem-part-2/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-fs-2"
+docker image build -t dockeronwindows/ch02-fs-2 .
+
+docker container run dockeronwindows/ch02-fs-2 `
+powershell ls C:\data
+
+https://blog.sixeyed.com/weekly-windows-dockerfile-10-volumes/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-volumes"
+docker image build -t dockeronwindows/ch02-volumes .
+
+docker container run `
+--name c1 dockeronwindows/ch02-volumes `
+"Set-Content -Value 'abc' -Path c:\app\logs\file1.txt"
+
+docker container run `
+ --volumes-from c1 dockeronwindows/ch02-volumes `
+ "cat c:\app\logs\file1.txt"
+
+docker container inspect -f '{{ json .Mounts }}' c1 |    ConvertFrom-Json
+docker volume ls
+
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-11-a-stateful-asp-net-core-app/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-hitcount-website"
+docker image build --tag dockeronwindows/ch02-hitcount-website .
+docker container run --detach --publish 80 --name week-11 dockeronwindows/ch02-hitcount-website
+
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-11
+Write-Host $ip
+start "http://$ip"
+
+#First remove the original container:
+
+docker rm -f week-11
+#Now create a directory on the host for the volume mapping, and run a container using a volume with that path:
+
+mkdir C:\app-state
+
+docker container run -d -p 80 `
+ -v C:\app-state:C:\dotnetapp\app-state `
+ --name week-11 `
+ dockeronwindows/ch02-hitcount-website
+#Browse to the new container and refresh to bump up the hit count:
+
+start "http://$(docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-11)"  
+#You can see the contents of the file from the host:
+
+cat C:\app-state\hit-count.txt
+26  
+#And now you can replace the container, and the new one will have the same state:
+
+docker container rm -f week-11
+
+docker container run -d -p 80 `
+ -v C:\app-state:C:\dotnetapp\app-state `
+ --name week-11 `
+ dockeronwindows/ch02-hitcount-website
+
+start "http://$(docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-11)"  
