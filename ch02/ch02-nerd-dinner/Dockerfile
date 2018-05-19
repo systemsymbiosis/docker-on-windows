@@ -13,7 +13,7 @@ RUN msbuild NerdDinner.csproj /p:OutputPath=c:\out\NerdDinner `
 FROM microsoft/aspnet:windowsservercore-10.0.14393.1198
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-ENV BING_MAPS_KEY AhKAh4uyjdU6kI3HWLIWHwGNXmESdMVN-NZucDRAj33_EBOZ7k53zaROduVOGJSh
+ENV BING_MAPS_KEY bing_maps_key
 WORKDIR C:\nerd-dinner
 
 RUN Remove-Website -Name 'Default Web Site'; `

@@ -270,3 +270,17 @@ docker image build -t dockeronwindows/ch02-nerd-dinner .
 docker container run -d -p 85:80 --name week-12 dockeronwindows/ch02-nerd-dinner
 docker container ls
 start "http://$(docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-12)"  
+
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-13-iis-logging/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-iis-log-watcher"
+
+docker container run -d -p 86:80 --name iis1 microsoft/iis:windowsservercore  
+start "http://localhost:86/"
+docker container exec -it iis1 powershell "ls C:\inetpub\logs\LogFiles\W3SVC1"
+docker container exec -it iis1 powershell "cat C:\inetpub\logs\LogFiles\W3SVC1\u_ex180520.log"
+
+docker image build -t dockeronwindows/ch03-iis-log-watcher .
+docker container run -d -p 8081:80 --name iis2 dockeronwindows/ch03-iis-log-watcher
+start "http://localhost:8081/"
+docker container logs iis2  
