@@ -7,6 +7,10 @@ docker run -d --name aspnetcontainer awsecssample:dev
 
 docker ps -a
 
+#One liner to stop / remove all of Docker containers:
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
 docker start aspnetcontainer
 
 docker stop aspnetcontainer
@@ -73,6 +77,40 @@ docker swarm unlock-key
 docker swarm unlock
 docker swarm update
 
+Docker image build	
+Build an image from a Dockerfile
+docker image history	
+Show the history of an image
+docker image import	
+Import the contents from a tarball to create a filesystem image
+docker image inspect	
+Display detailed information on one or more images
+docker image load	
+Load an image from a tar archive or STDIN
+docker image ls	
+List images
+docker image prune	
+Remove unused images
+docker image pull	
+Pull an image or a repository from a registry
+docker image push	
+Push an image or a repository to a registry
+docker image rm	
+Remove one or more images
+docker image save	
+Save one or more images to a tar archive (streamed to STDOUT by default)
+docker image tag	
+Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE
+
+WARNING! This will remove:
+        - all stopped containers
+        - all networks not used by at least one container
+        - all volumes not used by at least one container
+        - all images without at least one container associated to them
+        - all build cache
+
+docker ps -a
+
 https://blog.sixeyed.com/weekly-windows-dockerfile-1/
 cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch01\ch01-whale"
 docker build -t  dockeronwindows/ch01-whale .
@@ -103,22 +141,62 @@ cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-dotnet-helloworld
 
 docker image build -t dockeronwindows/ch02-dotnet-helloworld .
 docker container run dockeronwindows/ch02-dotnet-helloworld
+
 https://blog.sixeyed.com/weekly-windows-dockerfile-5/
 dotnet restore src
+dotnet publish src
 docker image build --file Dockerfile.slim --tag dockeronwindows/ch02-dotnet-helloworld:slim .
 
-docker container run dockeronwindows/ch02-dotnet-helloworld:
-dotnet publish src
-slim
+docker container run dockeronwindows/ch02-dotnet-helloworld:slim
 
+
+https://blog.sixeyed.com/weekly-windows-dockerfile-6/
 docker image build --tag docker-on-windows/ch02-dotnet-hello-world:multistage --file Dockerfile.multistage .
 docker container run docker-on-windows/ch02-dotnet-hello-world:multistage
 
+https://blog.sixeyed.com/weekly-windows-dockerfile-7/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-static-website"
+docker image build -t dockeronwindows/ch02-static-website .
+docker image build -t dockeronwindows/ch02-static-website --build-arg ENV_NAME=TEST .
+docker container run -d -P dockeronwindows/ch02-static-website
+docker container exec c7f hostname
+docker container inspect c7f
 $ docker system prune -a --volumes
 
-WARNING! This will remove:
-        - all stopped containers
-        - all networks not used by at least one container
-        - all volumes not used by at least one container
-        - all images without at least one container associated to them
-        - all build cache
+https://blog.sixeyed.com/weekly-windows-dockerfile-8/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-fs-1"
+docker image build -t dockeronwindows/ch02-fs-1 .
+docker image inspect --help
+docker images
+docker image inspect dockeronwindows/ch02-fs-1
+docker run --rm stefanscherer/winspector microsoft/iis
+docker run --rm stefanscherer/winspector dockeronwindows/ch02-fs-1
+#Running a container from this image you can see the new file:
+
+docker container run dockeronwindows/ch02-fs-1 `
+powershell cat c:\data\file1.txt
+#'from image 1'  
+#Of course that file isn't in the base image:
+
+docker container run microsoft/nanoserver `
+powershell cat c:\data\file1.txt
+#cat : Cannot find path 'C:\data\file1.txt'...  
+#And if you modify the file in one container:
+
+docker container run dockeronwindows/ch02-fs-1 `
+powershell "echo additional >> c:\data\file1.txt; cat C:\data\file1.txt"
+#'from image 1'  
+#additional  
+#That only edits the file in that container's writeable layer. Run another container from the image and the contents return to the original state:
+
+docker container run dockeronwindows/ch02-fs-1 `
+powershell cat c:\data\file1.txt
+#'from image 1'  
+#One liner to stop / remove all of Docker containers:
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+docker images
+docker ps -a
+docker container ls --all
+docker image rm 97ebd5a4d4b3
+docker container rm 825671e7d302
