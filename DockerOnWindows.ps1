@@ -261,3 +261,12 @@ docker container run -d -p 80 `
  dockeronwindows/ch02-hitcount-website
 
 start "http://$(docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-11)"  
+
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-12-nerddinner/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch02\ch02-nerd-dinner"
+
+docker image build -t dockeronwindows/ch02-nerd-dinner .
+docker container run -d -p 85:80 --name week-12 dockeronwindows/ch02-nerd-dinner
+docker container ls
+start "http://$(docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' week-12)"  
