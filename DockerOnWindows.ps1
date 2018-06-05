@@ -281,6 +281,30 @@ docker container exec -it iis1 powershell "ls C:\inetpub\logs\LogFiles\W3SVC1"
 docker container exec -it iis1 powershell "cat C:\inetpub\logs\LogFiles\W3SVC1\u_ex180520.log"
 
 docker image build -t dockeronwindows/ch03-iis-log-watcher .
-docker container run -d -p 8081:80 --name iis2 dockeronwindows/ch03-iis-log-watcher
-start "http://localhost:8081/"
-docker container logs iis2  
+docker container rm -f iis2
+docker container run -d -p 8098:80 --name iis2 dockeronwindows/ch03-iis-log-watcher
+start "http://localhost:8098/"
+docker container logs iis2
+
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-14-environment-variables/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-iis-environment-variables"
+
+docker container run --env ENV_01='Hello' --env ENV_02='World' microsoft/nanoserver `
+powershell 'Write-Output "$env:ENV_01 $env:ENV_02"'
+
+docker container run `
+--env ENV_01='Hello' --env ENV_02='World' `
+microsoft/nanoserver `
+powershell 'cmd /c echo %ENV_01% %ENV_02%'
+
+docker image build -t dockeronwindows/ch03-iis-environment-variables .
+docker container run -d -p 88:80 --name iisEnvironment dockeronwindows/ch03-iis-environment-variables
+docker container rm -f iisEnvironment
+start "http://localhost:88/"
+
+docker image build --file Dockerfile.servicemonitor -t dockeronwindows/ch03-iis-environment-variables:servicemonitor .
+docker container run -d -p 89:80 --name iisEnvironmentServicemonitor `  
+ dockeronwindows/ch03-iis-environment-variables:servicemonitor
+
+  
