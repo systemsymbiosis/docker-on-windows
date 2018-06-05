@@ -304,7 +304,8 @@ docker container rm -f iisEnvironment
 start "http://localhost:88/"
 
 docker image build --file Dockerfile.servicemonitor -t dockeronwindows/ch03-iis-environment-variables:servicemonitor .
-docker container run -d -p 89:80 --name iisEnvironmentServicemonitor `  
- dockeronwindows/ch03-iis-environment-variables:servicemonitor
+docker container run -d -p 89:80 --name iisEnvironmentServicemonitor `
+dockeronwindows/ch03-iis-environment-variables:servicemonitor
+start "http://localhost:89/"
 
   
