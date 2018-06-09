@@ -309,3 +309,42 @@ dockeronwindows/ch03-iis-environment-variables:servicemonitor
 start "http://localhost:89/"
 
   
+https://blog.sixeyed.com/windows-weekly-dockerfile-15-healthchecks/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-iis-healthcheck"
+
+#One liner to stop / remove all of Docker containers:
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+
+
+docker image build -t dockeronwindows/ch03-iis-healthcheck .
+docker container run -d -p 89:80 --name healthchceck dockeronwindows/ch03-iis-healthcheck
+
+docker container ls
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' healthchceck
+Write-Host $ip
+start "http://$ip"
+iwr -method POST http://$ip/toggle/unhealthy
+iwr -method POST http://$ip/toggle/healthy
+
+docker swarm init
+# docker : Error response from daemon: could not choose an IP address to advertise since this system has multiple addresses on interface WiFi
+ipconfig /all
+$ip = 192.168.1.3
+docker swarm init --advertise-addr $ip
+
+docker service create -d --name wwf-15 `
+--publish published=89,target=80,mode=host `
+dockeronwindows/ch03-iis-healthcheck
+docker service ls
+docker service ps wwf-15
+docker service inspect wwf-15
+
+$ip = 192.168.1.3
+Write-Host $ip
+start "http://192.168.1.3:89"
+iwr -method POST http://192.168.1.3:89/toggle/unhealthy
+iwr -method POST http://192.168.1.3:89/toggle/healthy
+docker service ps wwf-15
+
