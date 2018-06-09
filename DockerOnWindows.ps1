@@ -348,3 +348,47 @@ iwr -method POST http://192.168.1.3:89/toggle/unhealthy
 iwr -method POST http://192.168.1.3:89/toggle/healthy
 docker service ps wwf-15
 
+docker service rm wwf-15
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-16-sql-server/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-nerd-dinner-db"
+
+docker container run -d -p 1433:1433 --name sql-db -e sa_password=DockerCon! -e ACCEPT_EULA=Y microsoft/mssql-server-windows-express:2017-GA
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' sql-db
+Write-Host $ip
+
+SELECT host_platform, host_distribution, host_release  
+FROM sys.dm_os_host_info;  
+
+docker image build -t dockeronwindows/ch03-nerd-dinner-db .
+docker container run `
+  -d -p 1433:1433 `
+  --name nerd-dinner-db `
+  dockeronwindows/ch03-nerd-dinner-db
+
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' nerd-dinner-db
+Write-Host $ip
+
+INSERT INTO dbo.webpages_Roles (RoleName)  
+VALUES ('Temp')  
+
+
+docker container exec `
+ nerd-dinner-db `
+ powershell "Invoke-SqlCmd -Database NerdDinner -Query 'SELECT * FROM webpages_Roles'"
+
+mkdir -p C:\databases\nerd-dinner
+
+#One liner to stop / remove all of Docker containers:
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+docker container run `
+  -d -p 1433:1433 `
+  -v C:\databases\nerd-dinner:C:\data `
+  --name nerd-dinner-db `
+  dockeronwindows/ch03-nerd-dinner-db
+
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' nerd-dinner-db
+Write-Host $ip
+
