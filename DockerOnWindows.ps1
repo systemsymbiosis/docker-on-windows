@@ -332,14 +332,17 @@ docker swarm init
 # docker : Error response from daemon: could not choose an IP address to advertise since this system has multiple addresses on interface WiFi
 ipconfig /all
 $ip = 192.168.1.3
-docker swarm init --advertise-addr $ip
+docker swarm init --advertise-addr 192.168.1.3
+docker node ls
 
 docker service create -d --name wwf-15 `
 --publish published=89,target=80,mode=host `
 dockeronwindows/ch03-iis-healthcheck
+
 docker service ls
 docker service ps wwf-15
 docker service inspect wwf-15
+docker service rm wwf-15
 
 $ip = 192.168.1.3
 Write-Host $ip
@@ -392,3 +395,210 @@ docker container run `
 $ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' nerd-dinner-db
 Write-Host $ip
 
+
+https://blog.sixeyed.com/windows-weekly-dockerfile-17-connecting-containers/
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-nerd-dinner-web"
+docker container ls
+docker container run -d --name c1 microsoft/nanoserver ping -n 1000 localhost
+docker container run -d --name c1 --network=nat --ip 172.22.194.57 microsoft/nanoserver ping -n 1000 localhost
+docker container run -d --name c1 --network=nat --ip 172.22.194.57 microsoft/nanoserver ping nerd-dinner-db
+docker container run -d -p 84:80 --name c1 microsoft/nanoserver
+docker network connect nat c1
+docker network inspect nat
+docker inspect c1
+docker container stop c1
+docker container rm c1
+docker container run -d -p 83:80 --name c1 microsoft/nanoserver
+docker container run --name c2 microsoft/nanoserver ping c1
+docker inspect c2
+
+docker container exec `
+ c1 `
+ powershell "ping nerd-dinner-db"
+
+docker container exec `
+ c1 `
+ powershell "ping 8.8.8.8"
+
+# https://docs.docker.com/v17.09/engine/userguide/networking/
+# https://docs.docker.com/engine/reference/commandline/network/
+#Docker creates a network called nat by default
+docker network inspect nat
+docker network inspect bridge
+docker network inspect none
+
+docker network connect	#Connect a container to a network
+docker network create	#Create a network
+docker network disconnect	#Disconnect a container from a network
+docker network inspect	#Display detailed information on one or more networks
+docker network ls	#List networks
+docker network prune    #Remove all unused networks
+docker network rm	#Remove one or more networks
+
+
+# https://docs.docker.com/v17.09/engine/userguide/networking/
+docker network create --driver nat isolated_nw
+docker network inspect isolated_nw
+docker network ls
+docker container ls
+
+docker container run -d -p 89:80 --name c3 --network isolated_nw microsoft/nanoserver
+docker container run -d -p 89:80 --name c4 --network isolated_nw microsoft/nanoserver ping c3
+docker inspect c3
+docker inspect c4
+
+# https://github.com/docker/for-win/issues/294
+docker network create -d transparent transparent
+docker network ls
+
+Get-VMSwitch | fl
+Get-NetAdapter | fl
+Get-NetNAT | fl
+
+# Yes this still fails I'm afraid.
+docker run --rm -ti microsoft/nanoserver ping 8.8.8.8
+docker run --rm -ti --network=nat microsoft/nanoserver ping 8.8.8.8
+
+# This succeeds:
+docker run --rm -ti --network=transparent microsoft/nanoserver ping 8.8.8.8
+docker run --rm -ti --network=nat microsoft/nanoserver ipconfig /all
+
+docker ps -a
+
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-nerd-dinner-web"
+
+docker image build -t dockeronwindows/ch03-nerd-dinner-web .
+
+docker container stop nerd-dinner-web
+docker container rm nerd-dinner-web
+
+
+docker container run -d -p 88:80 --name nerd-dinner-web dockeronwindows/ch03-nerd-dinner-web
+
+
+docker container run `
+  -d -p 1433:1433 `
+  --name nerd-dinner-db `
+  dockeronwindows/ch03-nerd-dinner-db
+
+docker container run -d -p 8081:80 --name nerd-dinner-web dockeronwindows/ch03-nerd-dinner-web
+start "http://localhost:8081"
+
+docker inspect nerd-dinner-web
+
+# [WebException: The remote name could not be resolved: 'nerd-dinner-homepage']
+# https://blog.sixeyed.com/windows-weekly-dockerfile-18-splitting-ui/
+# https://blog.sixeyed.com/windows-weekly-dockerfile-19-integrating-ui-containers/
+
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-nerd-dinner-homepage"
+docker image build --tag dockeronwindows/ch03-nerd-dinner-homepage .
+docker container run -d -p 87:80 --name nerd-dinner-homepage dockeronwindows/ch03-nerd-dinner-homepage
+
+
+cd "C:\Dev\Learning Samples\Docker\docker-on-windows\ch03\ch03-nerd-dinner-web"
+docker image build -t dockeronwindows/ch03-nerd-dinner-web:v2 .
+
+md C:\databases\nd
+
+#One liner to stop / remove all of Docker containers:
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+docker container run -d -p 1433:1433 --name nerd-dinner-db -v C:\databases\nd:C:\data dockeronwindows/ch03-nerd-dinner-db
+
+docker container run -d -P  `
+  --name nerd-dinner-homepage `
+  dockeronwindows/ch03-nerd-dinner-homepage
+
+docker container run -d -P `
+  --name nerd-dinner `
+  dockeronwindows/ch03-nerd-dinner-web:v2
+
+$ip = docker container inspect --format '{{ .NetworkSettings.Networks.nat.IPAddress }}' nerd-dinner
+Write-Host $ip
+start "http://$ip"
+
+# [WebException: The remote name could not be resolved: 'nerd-dinner-homepage']
+docker network inspect nat
+# https://github.com/docker/for-win/issues/500
+docker network ls
+docker network rm nat
+docker network rm transparent
+docker network rm isolated_nw
+
+# https://docs.microsoft.com/en-us/virtualization/windowscontainers/manage-containers/swarm-mode#creating-an-overlay-network
+docker network create --driver=overlay overlaytest
+
+
+#Once an overlay network has been created, services can be created and attached to the network. A service is created with the following syntax:
+
+# Deploy a service to the swarm
+# C:\> docker service create --name=<SERVICENAME> --endpoint-mode dnsrr --network=<NETWORKNAME> <CONTAINERIMAGE> [COMMAND] [ARGS…]
+# Here, <SERVICENAME> is the name you'd like to give to the service--this is the name you will use to reference the service via service discovery (which uses Docker's native DNS server). <NETWORKNAME> is the name of the network that you would like to connect this service to (for example, "myOverlayNet"). <CONTAINERIMAGE> is the name of the container image that will defined the service.
+# Note: The second argument to this command, --endpoint-mode dnsrr, is required to specify to the Docker engine that the DNS Round Robin policy will be used to balance network traffic across service container endpoints. Currently, DNS Round-Robin is the only load balancing strategy supported on Windows.Routing mesh for Windows docker hosts is not yet supported, but will be coming soon. Users seeking an alternative load balancing strategy today can setup an external load balancer (e.g. NGINX) and use Swarm’s publish-port mode to expose container host ports over which to load balance.
+docker volume create nerddbtestvolume
+docker volume ls
+docker volume ls -f dangling=true
+docker swarm init --advertise-addr 192.168.1.3
+docker node ls
+docker swarm leave
+docker swarm leave --force
+
+
+docker service create -d --name nerd-dinner-db `
+--mount type=volume,source=nerddbtestvolume,target=C:/data/ `
+--publish published=8091,target=80,mode=host `
+--endpoint-mode dnsrr --network=overlaytest `
+--replicas 2 `
+dockeronwindows/ch03-nerd-dinner-db
+
+docker service create -d --name nerd-dinner-homepage `
+--publish published=8092,target=80,mode=host `
+--endpoint-mode dnsrr --network=overlaytest `
+--replicas 2 `
+dockeronwindows/ch03-nerd-dinner-homepage
+
+docker service create -d --name nerd-dinner `
+--publish published=8093,target=80,mode=host `
+--endpoint-mode dnsrr --network=overlaytest `
+--replicas 2 `
+dockeronwindows/ch03-nerd-dinner-web:v2
+
+docker network inspect overlaytest
+
+start "http://localhost:8093"
+
+
+docker service ls
+docker service ps nerd-dinner
+docker service ps nerd-dinner-db
+
+docker service inspect nerd-dinner-db
+docker service inspect nerd-dinner-homepage
+docker service inspect nerd-dinner
+
+docker service rm nerd-dinner-db
+docker service rm nerd-dinner-homepage
+docker service rm nerd-dinner
+
+
+docker service ls
+docker inspect serviceid
+
+docker node ls
+
+
+Stop-Service docker
+Start-Service docker
+
+# https://docs.microsoft.com/en-us/virtualization/windowscontainers/container-networking/advanced#bind-a-network-to-a-specific-network-interface
+#C:\> docker network create -d overlay -o com.docker.network.windowsshim.interface="Ethernet 2" TransparentNet2
+docker network create -d overlay -o com.docker.network.windowsshim.interface="WiFi" overlaytest
+# Note: The value for com.docker.network.windowsshim.interface is the network adapter's Name, which can be found with:
+
+Get-NetAdapter
+
+docker network ls
+docker network rm overlaytest
+docker network create -d overlay -o com.docker.network.windowsshim.interface="WiFi" overlaytest
+docker network inspect overlaytest
